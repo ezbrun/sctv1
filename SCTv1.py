@@ -247,20 +247,7 @@ def navigate_to_sct(driver, wait, cuit, max_attempts=3):
                                 continue  # Reintentar
                         
                         # Intentar cerrar la ventana emergente si existe
-                        try:
-                            print("Intentando cerrar ventana emergente...")
-                            close_button = WebDriverWait(driver, 5).until(EC.element_to_be_clickable(
-                                (By.XPATH, "//*[@id='noticias']/div/a")))
-                            
-                            # Mover el mouse al elemento antes de hacer clic
-                            actions = ActionChains(driver)
-                            actions.move_to_element(close_button).pause(random.uniform(0.5, 1.0)).perform()
-                            close_button.click()
-                            time.sleep(random.uniform(1.0, 2.0))
-                            print("Ventana emergente cerrada correctamente")
-                        except Exception as popup_error:
-                            print(f"No se encontró ventana emergente o no se pudo cerrar: {str(popup_error)}")
-                            # Continuar aunque no se pueda cerrar la ventana emergente
+                        try_close_popup(driver, wait)
                         
                         return True
                     else:
@@ -283,6 +270,43 @@ def navigate_to_sct(driver, wait, cuit, max_attempts=3):
                 time.sleep(random.uniform(2.0, 3.0))
     
     print(f"No se pudo navegar al Sistema de Cuentas Tributarias después de {max_attempts} intentos")
+    return False
+
+def try_close_popup(driver, wait, max_attempts=3):
+    """Intentar cerrar el popup si existe, con múltiples intentos"""
+    for attempt in range(max_attempts):
+        try:
+            print(f"Intentando cerrar ventana emergente (intento {attempt+1}/{max_attempts})...")
+            
+            # Esperar a que el popup esté visible
+            close_button = WebDriverWait(driver, 5).until(EC.element_to_be_clickable(
+                (By.XPATH, "//*[@id='noticias']/div/a")))
+            
+            # Mover el mouse al elemento antes de hacer clic
+            actions = ActionChains(driver)
+            actions.move_to_element(close_button).pause(random.uniform(0.5, 1.0)).perform()
+            close_button.click()
+            time.sleep(random.uniform(1.0, 2.0))
+            print("Ventana emergente cerrada correctamente")
+            
+            # Verificar si el popup realmente se cerró
+            try:
+                # Si el botón ya no está visible, el popup se cerró correctamente
+                WebDriverWait(driver, 2).until_not(EC.presence_of_element_located(
+                    (By.XPATH, "//*[@id='noticias']/div/a")))
+                print("Confirmado: el popup se cerró correctamente")
+                return True
+            except:
+                # Si el botón sigue visible, intentar nuevamente
+                print("El popup parece seguir visible. Reintentando...")
+                continue
+                
+        except Exception as popup_error:
+            print(f"No se encontró ventana emergente o no se pudo cerrar: {str(popup_error)}")
+            # Si no hay popup o no se puede cerrar, continuamos
+            return False
+    
+    print(f"No se pudo cerrar el popup después de {max_attempts} intentos")
     return False
 
 def select_option_by_text(driver, element, text):
@@ -373,219 +397,66 @@ def select_cuit_contribuyente(driver, wait, cuit_contribuyente):
         print(f"Error al seleccionar CUIT Contribuyente: {str(e)}")
         return False
 
-def try_close_popup(driver, wait, max_attempts=3):
-    """Intentar cerrar el popup si existe, con múltiples intentos"""
-    for attempt in range(max_attempts):
-        try:
-            print(f"Intentando cerrar ventana emergente (intento {attempt+1}/{max_attempts})...")
-            
-            # Esperar a que el popup esté visible
-            close_button = WebDriverWait(driver, 5).until(EC.element_to_be_clickable(
-                (By.XPATH, "//*[@id='noticias']/div/a")))
-            
-            # Mover el mouse al elemento antes de hacer clic
-            actions = ActionChains(driver)
-            actions.move_to_element(close_button).pause(random.uniform(0.5, 1.0)).perform()
-            close_button.click()
-            time.sleep(random.uniform(1.0, 2.0))
-            print("Ventana emergente cerrada correctamente")
-            
-            # Verificar si el popup realmente se cerró
-            try:
-                # Si el botón ya no está visible, el popup se cerró correctamente
-                WebDriverWait(driver, 2).until_not(EC.presence_of_element_located(
-                    (By.XPATH, "//*[@id='noticias']/div/a")))
-                print("Confirmado: el popup se cerró correctamente")
-                return True
-            except:
-                # Si el botón sigue visible, intentar nuevamente
-                print("El popup parece seguir visible. Reintentando...")
-                continue
-                
-        except Exception as popup_error:
-            print(f"No se encontró ventana emergente o no se pudo cerrar: {str(popup_error)}")
-            # Si no hay popup o no se puede cerrar, continuamos
-            return False
-    
-    print(f"No se pudo cerrar el popup después de {max_attempts} intentos")
-    return False
-
-def navigate_to_estado_cumplimiento(driver, wait, cuit, download_path):
-    """Navegar al Estado de Cumplimiento y descargar PDF"""
+def expandir_impuestos_y_exportar(driver, wait, cuit_contribuyente, download_path):
+    """Expandir impuestos y exportar a PDF"""
     try:
-        print("Navegando al Estado de Cumplimiento...")
+        print("Expandiendo impuestos y exportando a PDF...")
         
-        # 1. Hacer clic en el menú (primer XPath)
-        print("Haciendo clic en el menú...")
-        menu_button = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//*[@id='menubar-id']/table[3]/tbody/tr/td[1]/div")))
-        
-        # Mover el mouse al elemento antes de hacer clic
-        actions = ActionChains(driver)
-        actions.move_to_element(menu_button).pause(random.uniform(0.5, 1.0)).perform()
-        menu_button.click()
-        time.sleep(random.uniform(1.5, 2.5))
-        
-        # 2. Hacer clic en la opción del menú desplegable (segundo XPath)
-        print("Seleccionando opción del menú desplegable...")
-        menu_option = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//*[@id='menubar-id']/div[5]/div/table/tbody/tr[1]/td[2]/div")))
+        # 1. Hacer clic en el botón "Expandir impuestos"
+        print("Haciendo clic en 'Expandir impuestos'...")
+        expand_button = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//*[@id='expand_all']")))
         
         # Mover el mouse al elemento antes de hacer clic
         actions = ActionChains(driver)
-        actions.move_to_element(menu_option).pause(random.uniform(0.5, 1.0)).perform()
-        menu_option.click()
+        actions.move_to_element(expand_button).pause(random.uniform(0.5, 1.0)).perform()
+        expand_button.click()
         time.sleep(random.uniform(2.0, 3.0))
         
-        # 3. Hacer clic en el botón siguiente
-        print("Haciendo clic en el botón siguiente...")
+        # 2. Hacer clic en el botón de PDF
+        print("Haciendo clic en el botón de PDF...")
+        pdf_button = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//*[@id='DataTables_Table_0_wrapper']/div[1]/a[3]")))
         
-        # Verificar si hay un diálogo de resubmisión y manejarlo
-        try:
-            # Esperar brevemente para ver si aparece el diálogo
-            resubmit_button = WebDriverWait(driver, 3).until(EC.element_to_be_clickable(
-                (By.XPATH, "//button[contains(text(), 'Continue') or contains(text(), 'Continuar')]")))
-            
-            print("Detectado diálogo de resubmisión. Haciendo clic en Continuar...")
-            actions = ActionChains(driver)
-            actions.move_to_element(resubmit_button).pause(random.uniform(0.3, 0.7)).perform()
-            resubmit_button.click()
-            time.sleep(random.uniform(2.0, 3.0))
-        except:
-            # No apareció el diálogo, continuamos normalmente
-            pass
+        # Obtener el nombre del archivo original antes de hacer clic
+        original_files = os.listdir(download_path)
         
-        # Intentar hacer clic en el botón siguiente
-        max_attempts = 3
-        for attempt in range(max_attempts):
-            try:
-                next_button = wait.until(EC.element_to_be_clickable(
-                    (By.XPATH, "//*[@id='contentPart']/form/div[2]/div[3]/div/span[6]/div/span/span/div/div/input")))
-                
-                # Mover el mouse al elemento antes de hacer clic
-                actions = ActionChains(driver)
-                actions.move_to_element(next_button).pause(random.uniform(0.5, 1.0)).perform()
-                next_button.click()
-                break
-            except (TimeoutException, StaleElementReferenceException) as e:
-                print(f"Intento {attempt+1} fallido: {str(e)}")
-                
-                # Verificar si hay un mensaje de carga
-                try:
-                    loading = driver.find_element(By.XPATH, "//*[contains(text(), 'Cargando...')]")
-                    print("Sistema cargando. Esperando...")
-                    time.sleep(5)  # Esperar a que termine de cargar
-                except:
-                    pass
-                
-                # Verificar si hay un diálogo de resubmisión y manejarlo
-                try:
-                    resubmit_button = WebDriverWait(driver, 3).until(EC.element_to_be_clickable(
-                        (By.XPATH, "//button[contains(text(), 'Continue') or contains(text(), 'Continuar')]")))
-                    
-                    print("Detectado diálogo de resubmisión. Haciendo clic en Continuar...")
-                    actions = ActionChains(driver)
-                    actions.move_to_element(resubmit_button).pause(random.uniform(0.3, 0.7)).perform()
-                    resubmit_button.click()
-                    time.sleep(random.uniform(2.0, 3.0))
-                except:
-                    # No apareció el diálogo
-                    pass
-                
-                if attempt == max_attempts - 1:
-                    print("No se pudo hacer clic en el botón siguiente después de varios intentos.")
-                    return False
+        # Mover el mouse al elemento antes de hacer clic
+        actions = ActionChains(driver)
+        actions.move_to_element(pdf_button).pause(random.uniform(0.5, 1.0)).perform()
+        pdf_button.click()
         
-        # Esperar a que cargue la página de resultados
-        print("Esperando a que cargue la página de resultados...")
+        # Esperar a que se descargue el archivo
+        print("Esperando a que se descargue el archivo PDF...")
         time.sleep(random.uniform(5.0, 8.0))
         
-        # 4. Descargar el PDF
-        print("Descargando PDF...")
+        # Verificar que se haya descargado el archivo
+        new_files = os.listdir(download_path)
+        downloaded_files = [f for f in new_files if f not in original_files]
         
-        # Verificar si hay un diálogo de resubmisión y manejarlo
-        try:
-            # Esperar brevemente para ver si aparece el diálogo
-            resubmit_button = WebDriverWait(driver, 3).until(EC.element_to_be_clickable(
-                (By.XPATH, "//button[contains(text(), 'Continue') or contains(text(), 'Continuar')]")))
-            
-            print("Detectado diálogo de resubmisión. Haciendo clic en Continuar...")
-            actions = ActionChains(driver)
-            actions.move_to_element(resubmit_button).pause(random.uniform(0.3, 0.7)).perform()
-            resubmit_button.click()
-            time.sleep(random.uniform(2.0, 3.0))
-        except:
-            # No apareció el diálogo, continuamos normalmente
-            pass
-        
-        # Intentar hacer clic en el botón de exportar a PDF
-        max_attempts = 3
-        for attempt in range(max_attempts):
-            try:
-                pdf_button = wait.until(EC.element_to_be_clickable(
-                    (By.XPATH, "//*[@id='contentPart']/form/div[2]/div[3]/div/span[3]/div/div[2]/div/div/a/img")))
-                
-                # Mover el mouse al elemento antes de hacer clic
-                actions = ActionChains(driver)
-                actions.move_to_element(pdf_button).pause(random.uniform(0.5, 1.0)).perform()
-                
-                # Obtener el nombre del archivo original antes de hacer clic
-                original_files = os.listdir(download_path)
-                
-                pdf_button.click()
-                print("Clic en botón de PDF realizado")
-                
-                # Esperar a que se descargue el archivo
-                time.sleep(random.uniform(5.0, 8.0))
-                
-                # Verificar que se haya descargado el archivo
-                new_files = os.listdir(download_path)
-                downloaded_files = [f for f in new_files if f not in original_files]
-                
-                if downloaded_files:
-                    # Renombrar el archivo descargado
-                    for file in downloaded_files:
-                        if file.endswith('.pdf'):
-                            old_path = os.path.join(download_path, file)
-                            new_path = os.path.join(download_path, f"{cuit}_Estado de cumplimiento.pdf")
-                            
-                            # Si ya existe un archivo con ese nombre, eliminarlo
-                            if os.path.exists(new_path):
-                                os.remove(new_path)
-                                
-                            os.rename(old_path, new_path)
-                            print(f"PDF guardado como: {cuit}_Estado de cumplimiento.pdf")
-                            return True
-                else:
-                    print("No se detectó ningún archivo descargado. Reintentando...")
-                    if attempt == max_attempts - 1:
-                        print("No se pudo descargar el PDF después de varios intentos.")
-                        return False
-            except (TimeoutException, StaleElementReferenceException) as e:
-                print(f"Intento {attempt+1} fallido al descargar PDF: {str(e)}")
-                
-                # Verificar si hay un diálogo de resubmisión y manejarlo
-                try:
-                    resubmit_button = WebDriverWait(driver, 3).until(EC.element_to_be_clickable(
-                        (By.XPATH, "//button[contains(text(), 'Continue') or contains(text(), 'Continuar')]")))
+        if downloaded_files:
+            # Renombrar el archivo descargado
+            for file in downloaded_files:
+                if file.endswith('.pdf'):
+                    old_path = os.path.join(download_path, file)
+                    new_path = os.path.join(download_path, f"{cuit_contribuyente}_pantalla inicial sct.pdf")
                     
-                    print("Detectado diálogo de resubmisión. Haciendo clic en Continuar...")
-                    actions = ActionChains(driver)
-                    actions.move_to_element(resubmit_button).pause(random.uniform(0.3, 0.7)).perform()
-                    resubmit_button.click()
-                    time.sleep(random.uniform(2.0, 3.0))
-                except:
-                    # No apareció el diálogo
-                    pass
-                
-                if attempt == max_attempts - 1:
-                    print("No se pudo descargar el PDF después de varios intentos.")
-                    return False
-        
-        return False
+                    # Si ya existe un archivo con ese nombre, eliminarlo
+                    if os.path.exists(new_path):
+                        os.remove(new_path)
+                        
+                    os.rename(old_path, new_path)
+                    print(f"PDF guardado como: {cuit_contribuyente}_pantalla inicial sct.pdf")
+                    return True
+            
+            print("Se descargó un archivo, pero no tiene extensión de PDF (.pdf)")
+            return False
+        else:
+            print("No se detectó ningún archivo descargado")
+            return False
         
     except Exception as e:
-        print(f"Error al navegar al Estado de Cumplimiento: {str(e)}")
+        print(f"Error al expandir impuestos y exportar a PDF: {str(e)}")
         return False
 
 def close_sct_tab(driver):
@@ -627,7 +498,6 @@ def logout_afip(driver, wait):
         # Mover el mouse al botón de cerrar sesión antes de hacer clic
         actions = ActionChains(driver)
         actions.move_to_element(logout_button).pause(random.uniform(0.5, 1.0)).perform()
-        logout_button.click()  (1.0).perform()
         logout_button.click()
         time.sleep(random.uniform(2.0, 3.0))
         
@@ -694,17 +564,17 @@ def main():
                     print(f"No se pudo navegar al Sistema de Cuentas Tributarias para el CUIT {cuit_ingresar}. Continuando con el siguiente.")
                     continue
                 
-                # NUEVO PASO: Seleccionar el CUIT Contribuyente del desplegable
+                # Seleccionar el CUIT Contribuyente del desplegable
                 if not select_cuit_contribuyente(driver, wait, cuit_contribuyente):
                     print(f"No se pudo seleccionar el CUIT Contribuyente {cuit_contribuyente}. Continuando con el siguiente.")
                     # Cerrar la pestaña del SCT y volver a la pestaña principal
                     close_sct_tab(driver)
                     continue
                 
-                # Navegar al Estado de Cumplimiento y descargar PDF
-                if not navigate_to_estado_cumplimiento(driver, wait, cuit_contribuyente, download_path):
-                    print(f"No se pudo obtener el Estado de Cumplimiento para el CUIT {cuit_contribuyente}. Continuando con el siguiente.")
-                    # Continuar aunque no se pueda obtener el Estado de Cumplimiento
+                # NUEVO FLUJO: Expandir impuestos y exportar a PDF
+                if not expandir_impuestos_y_exportar(driver, wait, cuit_contribuyente, download_path):
+                    print(f"No se pudo expandir impuestos y exportar a PDF para el CUIT {cuit_contribuyente}. Continuando con el siguiente.")
+                    # Continuar aunque no se pueda expandir impuestos y exportar a PDF
                 
                 # Cerrar la pestaña del SCT y volver a la pestaña principal
                 if not close_sct_tab(driver):
