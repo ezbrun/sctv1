@@ -76,12 +76,11 @@ def read_credentials(excel_path):
 def human_typing(element, text):
     """Simular escritura humana tecla por tecla con pausas aleatorias"""
     for char in text:
-        # Pausa aleatoria entre 0.1 y 0.3 segundos entre cada tecla
-        time.sleep(random.uniform(0.1, 0.3))
+        time.sleep(random.uniform(0.05, 0.15))
         element.send_keys(char)
         # Pausa adicional aleatoria ocasional para simular pensamiento
         if random.random() < 0.2:  # 20% de probabilidad
-            time.sleep(random.uniform(0.2, 0.5))
+            time.sleep(random.uniform(0.1, 0.3))
 
 def login_afip(driver, cuit, clave, wait):
     """Realizar el login en AFIP simulando comportamiento humano"""
@@ -93,14 +92,14 @@ def login_afip(driver, cuit, clave, wait):
         human_typing(cuit_input, cuit)
         
         # Pequeña pausa antes de hacer clic en el botón
-        time.sleep(random.uniform(0.5, 1.0))
+        time.sleep(random.uniform(0.3, 0.6))
         
         # Click en botón siguiente
         next_button = wait.until(EC.element_to_be_clickable((By.ID, "F1:btnSiguiente")))
         next_button.click()
         
         # Esperar a que aparezca el campo de contraseña
-        time.sleep(random.uniform(1.5, 2.5))
+        time.sleep(random.uniform(1.0, 1.5))
         
         # Ingresar Clave
         clave_input = wait.until(EC.element_to_be_clickable((By.ID, "F1:password")))
@@ -109,14 +108,14 @@ def login_afip(driver, cuit, clave, wait):
         human_typing(clave_input, clave)
         
         # Pequeña pausa antes de hacer clic en el botón de login
-        time.sleep(random.uniform(0.7, 1.2))
+        time.sleep(random.uniform(0.25, 0.5))
         
         # Click en botón de login
         login_button = wait.until(EC.element_to_be_clickable((By.ID, "F1:btnIngresar")))
         login_button.click()
         
         # Esperar a que cargue la página después del login
-        time.sleep(random.uniform(4.0, 6.0))
+        time.sleep(random.uniform(2.0, 4.0))
         return True
     except Exception as e:
         print(f"Error en el login: {str(e)}")
@@ -180,7 +179,7 @@ def navigate_to_sct(driver, wait, cuit, max_attempts=3):
             print(f"Navegando al Sistema de Cuentas Tributarias para CUIT: {cuit} (Intento {attempt}/{max_attempts})")
             
             # Esperar a que la página principal cargue completamente
-            time.sleep(random.uniform(3.0, 5.0))
+            time.sleep(random.uniform(1.0, 2.0))
             
             # Buscar el campo de búsqueda
             print("Buscando el campo de búsqueda...")
@@ -188,9 +187,9 @@ def navigate_to_sct(driver, wait, cuit, max_attempts=3):
             
             # Mover el mouse al elemento antes de hacer clic
             actions = ActionChains(driver)
-            actions.move_to_element(search_input).pause(random.uniform(0.5, 1.0)).perform()
+            actions.move_to_element(search_input).pause(random.uniform(0.25, 0.75)).perform()
             search_input.click()
-            time.sleep(random.uniform(1.0, 2.0))
+            time.sleep(random.uniform(0.5, 1.0))
             
             # Limpiar el campo de búsqueda
             search_input.clear()
@@ -198,7 +197,7 @@ def navigate_to_sct(driver, wait, cuit, max_attempts=3):
             # Escribir "SISTEMA DE CUENTAS TRIBUTARIAS" tecla por tecla
             print("Escribiendo 'SISTEMA DE CUENTAS TRIBUTARIAS' en el buscador...")
             human_typing(search_input, "SISTEMA DE CUENTAS TRIBUTARIAS")
-            time.sleep(random.uniform(2.0, 3.0))
+            time.sleep(random.uniform(1.5, 2.0))
             
             # Esperar a que aparezcan los resultados de búsqueda
             print("Esperando resultados de búsqueda...")
@@ -217,7 +216,7 @@ def navigate_to_sct(driver, wait, cuit, max_attempts=3):
                     actions = ActionChains(driver)
                     actions.move_to_element(result_item).pause(random.uniform(0.5, 1.0)).perform()
                     result_item.click()
-                    time.sleep(random.uniform(4.0, 6.0))
+                    time.sleep(random.uniform(2.0, 3.0))
                     
                     # Cambiar a la nueva pestaña que se abre
                     print("Cambiando a la nueva pestaña...")
@@ -267,7 +266,7 @@ def navigate_to_sct(driver, wait, cuit, max_attempts=3):
             if len(driver.window_handles) > 1:
                 driver.close()
                 driver.switch_to.window(driver.window_handles[0])
-                time.sleep(random.uniform(2.0, 3.0))
+                time.sleep(random.uniform(1.5, 2.0))
     
     print(f"No se pudo navegar al Sistema de Cuentas Tributarias después de {max_attempts} intentos")
     return False
@@ -286,7 +285,7 @@ def try_close_popup(driver, wait, max_attempts=3):
             actions = ActionChains(driver)
             actions.move_to_element(close_button).pause(random.uniform(0.5, 1.0)).perform()
             close_button.click()
-            time.sleep(random.uniform(1.0, 2.0))
+            time.sleep(random.uniform(0.5, 1.0))
             print("Ventana emergente cerrada correctamente")
             
             # Verificar si el popup realmente se cerró
@@ -350,7 +349,7 @@ def select_cuit_contribuyente(driver, wait, cuit_contribuyente):
         if select_option_by_text(driver, select_element, cuit_contribuyente):
             # Esperar a que la página se actualice después de seleccionar el CUIT
             # El select tiene onchange="javascript:this.form.submit();" que envía el formulario automáticamente
-            time.sleep(random.uniform(3.0, 5.0))
+            time.sleep(random.uniform(1.5, 3.0))
             
             # Verificar si hay un diálogo de resubmisión y manejarlo
             try:
@@ -381,7 +380,7 @@ def select_cuit_contribuyente(driver, wait, cuit_contribuyente):
                     if cuit_contribuyente in option.text:
                         select.select_by_index(i)
                         print(f"CUIT seleccionado por índice: {option.text}")
-                        time.sleep(random.uniform(3.0, 5.0))
+                        time.sleep(random.uniform(2.0, 3.0))
                         
                         # Verificar si hay un popup y cerrarlo después de seleccionar el CUIT
                         try_close_popup(driver, wait)
@@ -398,25 +397,14 @@ def select_cuit_contribuyente(driver, wait, cuit_contribuyente):
         return False
 
 def expandir_impuestos_y_exportar(driver, wait, cuit_contribuyente, download_path):
-    """Expandir impuestos y exportar a PDF"""
+    """Expandir impuestos y exportar a XLSX"""
     try:
-        print("Expandiendo impuestos y exportando a PDF...")
-        
-        # 1. Hacer clic en el botón "Expandir impuestos"
-        print("Haciendo clic en 'Expandir impuestos'...")
-        expand_button = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//*[@id='expand_all']")))
-        
-        # Mover el mouse al elemento antes de hacer clic
-        actions = ActionChains(driver)
-        actions.move_to_element(expand_button).pause(random.uniform(0.5, 1.0)).perform()
-        expand_button.click()
-        time.sleep(random.uniform(2.0, 3.0))
-        
-        # 2. Hacer clic en el botón de PDF
-        print("Haciendo clic en el botón de PDF...")
+        print("Expandiendo impuestos y exportando a XLSX...")
+
+        # 1. Hacer clic en el botón de XLSX
+        print("Haciendo clic en el botón de XLSX...")
         pdf_button = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//*[@id='DataTables_Table_0_wrapper']/div[1]/a[3]")))
+            (By.XPATH, "//*[@id='DataTables_Table_0_wrapper']/div[1]/a[2]")))
         
         # Obtener el nombre del archivo original antes de hacer clic
         original_files = os.listdir(download_path)
@@ -427,8 +415,8 @@ def expandir_impuestos_y_exportar(driver, wait, cuit_contribuyente, download_pat
         pdf_button.click()
         
         # Esperar a que se descargue el archivo
-        print("Esperando a que se descargue el archivo PDF...")
-        time.sleep(random.uniform(5.0, 8.0))
+        print("Esperando a que se descargue el archivo XLSX...")
+        time.sleep(random.uniform(3.0, 5.0))
         
         # Verificar que se haya descargado el archivo
         new_files = os.listdir(download_path)
@@ -437,26 +425,26 @@ def expandir_impuestos_y_exportar(driver, wait, cuit_contribuyente, download_pat
         if downloaded_files:
             # Renombrar el archivo descargado
             for file in downloaded_files:
-                if file.endswith('.pdf'):
+                if file.endswith('.xlsx'):
                     old_path = os.path.join(download_path, file)
-                    new_path = os.path.join(download_path, f"{cuit_contribuyente}_pantalla inicial sct.pdf")
+                    new_path = os.path.join(download_path, f"{cuit_contribuyente}_pantalla inicial sct.xlsx")
                     
                     # Si ya existe un archivo con ese nombre, eliminarlo
                     if os.path.exists(new_path):
                         os.remove(new_path)
                         
                     os.rename(old_path, new_path)
-                    print(f"PDF guardado como: {cuit_contribuyente}_pantalla inicial sct.pdf")
+                    print(f"PDF guardado como: {cuit_contribuyente}_pantalla inicial sct.xlsx")
                     return True
             
-            print("Se descargó un archivo, pero no tiene extensión de PDF (.pdf)")
+            print("Se descargó un archivo, pero no tiene extensión de XLSX (.xlsx)")
             return False
         else:
             print("No se detectó ningún archivo descargado")
             return False
         
     except Exception as e:
-        print(f"Error al expandir impuestos y exportar a PDF: {str(e)}")
+        print(f"Error al expandir impuestos y exportar a xlsx: {str(e)}")
         return False
 
 def close_sct_tab(driver):
@@ -468,7 +456,7 @@ def close_sct_tab(driver):
         
         # Cambiar a la pestaña original (ARCA)
         driver.switch_to.window(driver.window_handles[0])
-        time.sleep(random.uniform(2.0, 3.0))
+        time.sleep(random.uniform(1.0, 2.0))
         
         return True
     except Exception as e:
